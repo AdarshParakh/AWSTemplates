@@ -1,13 +1,18 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: AWS EC2 instance template for LilPaws
 
+Parameters:
+  VPCID:
+    Type: String
+    Description: VPC ID where the EC2 instance will be deployed
+
 Resources:
   LilPawsWebTestEC2Instance:
     Type: 'AWS::EC2::Instance'
     Properties:
       InstanceType: t2.micro  # Free tier eligible instance type
-      ImageId: ami-0c55b159cbfafe1f0  # Amazon Linux 2 AMI (adjust based on your region)
-      KeyName: myKeyPair  # Replace with the name of your existing key pair
+      ImageId: ami-0ebfd941bbafe70c6  # Amazon Linux 2 AMI (adjust based on your region)
+      KeyName: Test  # Replace with the name of your existing key pair
       SecurityGroupIds:
         - !Ref LilPawsWebTestSecurityGroup
       Tags:
@@ -27,8 +32,8 @@ Resources:
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0  # Allow HTTP from anywhere
-      VpcId: vpc-123456  # Replace with your VPC ID (get it from your AWS Console)
-      
+      VpcId: !Ref VPCID  # Using the parameter for VPC ID
+
 Outputs:
   EC2InstancePublicIP:
     Description: "Public IP of the EC2 instance"
