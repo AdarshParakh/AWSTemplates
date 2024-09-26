@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  LilPawsWebTestS3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: 'lilpawswebtests3'
+      AccessControl: Private
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: "TransitionToIAAfter30Days"
+            Status: "Enabled"
+            Transitions:
+              - StorageClass: "STANDARD_IA"  # Transition to Infrequent Access after 30 days
+                TransitionInDays: 30
+          - Id: "ExpireAfter365Days"
+            Status: "Enabled"
+            ExpirationInDays: 365  # Expire objects after 365 days
+          - Id: "DeleteIncompleteMultipartUploads"
+            Status: "Enabled"
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7  # Delete incomplete multipart uploads after 7 days
+      Tags:
+        - Key: Environment
+          Value: Test
+
+Outputs:
+  S3BucketName:
+    Description: "The name of the S3 bucket"
+    Value: !Ref LilPawsWebTestS3Bucket
+
+  S3BucketArn:
+    Description: "The ARN of the S3 bucket"
+    Value: !GetAtt LilPawsWebTestS3Bucket.Arn
