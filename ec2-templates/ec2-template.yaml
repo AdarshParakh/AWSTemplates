@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS EC2 instance template for LilPaws
+
+Resources:
+  LilPawsWebTestEC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: t2.micro  # Free tier eligible instance type
+      ImageId: ami-0c55b159cbfafe1f0  # Amazon Linux 2 AMI (adjust based on your region)
+      KeyName: myKeyPair  # Replace with the name of your existing key pair
+      SecurityGroupIds:
+        - !Ref LilPawsWebTestSecurityGroup
+      Tags:
+        - Key: Name
+          Value: lilpaws-web-test-ec2
+
+  LilPawsWebTestSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties: 
+      GroupDescription: Allow SSH and HTTP access
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0  # Allow SSH from anywhere (ensure to restrict in production)
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0  # Allow HTTP from anywhere
+      VpcId: vpc-123456  # Replace with your VPC ID (get it from your AWS Console)
+      
+Outputs:
+  EC2InstancePublicIP:
+    Description: "Public IP of the EC2 instance"
+    Value: !GetAtt LilPawsWebTestEC2Instance.PublicIp
