@@ -1,0 +1,107 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "CloudFormation Template to create VPC with public and private subnets"
+
+Resources:
+  # VPC
+  LilPawsVPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: lilpaws-vpc
+
+  # Internet Gateway
+  LilPawsInternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: lilpaws-igw
+
+  # Attach Internet Gateway to VPC
+  AttachGateway:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref LilPawsVPC
+      InternetGatewayId: !Ref LilPawsInternetGateway
+
+  # Public Subnet
+  PublicSubnetA:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref LilPawsVPC
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Select [ 0, !GetAZs ]
+      Tags:
+        - Key: Name
+          Value: lilpaws-public-subnet-a
+
+  # Private Subnet
+  PrivateSubnetA:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref LilPawsVPC
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: false
+      AvailabilityZone: !Select [ 0, !GetAZs ]
+      Tags:
+        - Key: Name
+          Value: lilpaws-private-subnet-a
+
+  # Public Route Table
+  PublicRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref LilPawsVPC
+      Tags:
+        - Key: Name
+          Value: lilpaws-public-route-table
+
+  # Public Route to the Internet Gateway
+  PublicRoute:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref LilPawsInternetGateway
+
+  # Associate Public Subnet with Route Table
+  PublicSubnetRouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PublicSubnetA
+      RouteTableId: !Ref PublicRouteTable
+
+  # Private Route Table (isolated)
+  PrivateRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref LilPawsVPC
+      Tags:
+        - Key: Name
+          Value: lilpaws-private-route-table
+
+  # Associate Private Subnet with Private Route Table
+  PrivateSubnetRouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PrivateSubnetA
+      RouteTableId: !Ref PrivateRouteTable
+
+Outputs:
+  VPCId:
+    Description: "VPC ID"
+    Value: !Ref LilPawsVPC
+  PublicSubnetA:
+    Description: "Public Subnet A"
+    Value: !Ref PublicSubnetA
+  PrivateSubnetA:
+    Description: "Private Subnet A"
+    Value: !Ref PrivateSubnetA
+  InternetGatewayId:
+    Description: "Internet Gateway ID"
+    Value: !Ref LilPawsInternetGateway
