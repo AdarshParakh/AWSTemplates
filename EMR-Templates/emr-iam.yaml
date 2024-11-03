@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: CloudFormation template to create IAM roles for Project 2 - EMR.
+
+Parameters:
+  FullName:
+    Description: Enter your full name for resource naming.
+    Type: String
+    Default: adarsh
+
+Resources:
+  # IAM Role for EMR Service Role
+  EmrServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "p2-${FullName}-emr-service-role"
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: elasticmapreduce.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonElasticMapReduceRole
+
+  # IAM Role for EC2 instances in the EMR cluster
+  EmrJobFlowRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "p2-${FullName}-emr-ec2-role"
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonElasticMapReduceforEC2Role
+
+  # IAM Instance Profile for EMR Cluster EC2 instances
+  EmrJobFlowInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub "p2-${FullName}-emr-instance-profile"
+      Roles:
+        - !Ref EmrJobFlowRole
+
+Outputs:
+  EmrServiceRoleName:
+    Description: The name of the EMR service role.
+    Value: !Ref EmrServiceRole
+
+  EmrInstanceProfileName:
+    Description: The name of the IAM instance profile for EC2 in the EMR cluster.
+    Value: !Ref EmrJobFlowInstanceProfile

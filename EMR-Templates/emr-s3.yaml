@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: CloudFormation template to create S3 buckets for Project 2 - EMR.
+
+Parameters:
+  FullName:
+    Description: Enter your full name for resource naming.
+    Type: String
+    Default: adarsh
+
+Resources:
+  # S3 Bucket for EMR output data
+  EmrOutputBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "p2-${FullName}-emr-output-bucket-${AWS::AccountId}"
+      AccessControl: Private
+
+  # S3 Bucket for EMR logs
+  EmrLogBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "p2-${FullName}-emr-log-bucket-${AWS::AccountId}"
+      AccessControl: Private
+
+Outputs:
+  EmrOutputBucketName:
+    Description: The name of the EMR output bucket.
+    Value: !Ref EmrOutputBucket
+
+  EmrLogBucketName:
+    Description: The name of the EMR log bucket.
+    Value: !Ref EmrLogBucket

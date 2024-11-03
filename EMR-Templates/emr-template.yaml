@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  MyBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: p2-yourfullname
+
+  EmrRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - elasticmapreduce.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
+        - 'arn:aws:iam::aws:policy/service-role/AmazonElasticMapReduceRole'
+
+  EmrEc2InstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Roles:
+        - !Ref EmrRole
+
+  EmrSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Security Group for EMR
+      VpcId: YourVpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+  EmrCluster:
+    Type: 'AWS::EMR::Cluster'
+    Properties:
+      Applications:
+        - Name: Hadoop
+        - Name: Hive
+        - Name: Spark
+      Instances:
+        Ec2KeyName: YourKeyName
+        KeepJobFlowAliveWhenNoSteps: true
+        TerminationProtected: false
+        Ec2SubnetId: YourSubnetId
+        EmrManagedMasterSecurityGroup: YourSecurityGroupId
+        EmrManagedSlaveSecurityGroup: YourSecurityGroupId
+        MasterInstanceGroup:
+          InstanceCount: 1
+          InstanceType: c1.medium
+          Name: Master
+        CoreInstanceGroup:
+          InstanceCount: 1
+          InstanceType: c1.medium
+          Name: Core
+      JobFlowRole: !Ref EmrEc2InstanceProfile
+      Name: p2-yourfullname
+      ReleaseLabel: emr-7.0.0
+      ServiceRole: !Ref EmrRole
+      VisibleToAllUsers: true

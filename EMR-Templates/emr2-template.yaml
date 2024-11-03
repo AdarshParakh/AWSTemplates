@@ -1,0 +1,12 @@
+#create emr clpudformation template
+#     Properties:
+#       GroupDescription: EMR Cluster Security Group
+#       VpcId:
+#         Fn::ImportValue: !Sub ${NetworkStackName}-VpcId
+#       SecurityGroupIngress:
+#         - IpProtocol: tcp
+#           FromPort: 22
+#           ToPort: 22
+#           CidrIp:           
+#       Tags:
+#         - Key: Name

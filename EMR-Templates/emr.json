@@ -1,0 +1,69 @@
+{
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "EMR Cluster for X Hashtag Counter",
+        "Parameters": {
+            "KeypairName": {
+                "Type": "AWS::EC2::KeyPair::KeyName",
+                "Description": "EC2 Key Pair for SSH access"
+            },
+            "ClusterName": {
+                "Type": "String",
+                "Description": "Name of the EMR Cluster"
+            },
+            "MasterInstanceType": {
+                "Type": "String",
+                "Default": "c1.medium",
+                "Description": "Instance type for the master node"
+            },
+            "CoreInstanceType": {
+                "Type": "String",
+                "Default": "c1.medium",
+                "Description": "Instance type for core nodes"
+            },
+            "CoreInstanceCount": {
+                "Type": "Number",
+                "Default": 1,
+                "Description": "Number of core nodes"
+            }
+        },
+        "Resources": {
+            "EMRCluster": {
+                "Type": "AWS::EMR::Cluster",
+                "Properties": {
+                    "ServiceRole": "EMRServiceRole"
+                        "ServiceRole": "EMRServiceRole"
+                    },
+                    "JobFlowRole": "EMR_EC2_DefaultRole",
+                    "Name": {
+                        "Ref": "ClusterName"
+                    },
+                    "ReleaseLabel": "emr-7.0.0",
+                    "Applications": [
+                        {
+                            "Name": "Spark"
+                        }
+                    ],
+                    "Instances": {
+                        "MasterInstanceGroup": {
+                            "Name": "Master Instance Group",
+                            "InstanceCount": 1,
+                            "InstanceType": {
+                                "Ref": "MasterInstanceType"
+                            },
+                            "Market": "ON_DEMAND"
+                        },
+                        "CoreInstanceGroup": {
+                            "Name": "Core Instance Group",
+                            "InstanceCount": {
+                                "Ref": "CoreInstanceCount"
+                            },
+                            "InstanceType": {
+                                "Ref": "CoreInstanceType"
+                            },
+                            "Market": "ON_DEMAND"
+                        }
+                    }
+                }
+            }
+        }
+}

@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "AWS CloudFormation Template for RDS MySQL Database with configurable VPC, Subnet, and Security Group."
+
+Parameters:
+  VPC:
+    Type: AWS::EC2::VPC::Id
+    Description: "Select the VPC for the RDS instance."
+
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: "Select the subnet(s) for the RDS instance."
+
+  DBInstanceClass:
+    Type: String
+    Default: db.t3.micro
+    AllowedValues:
+      - db.t3.micro
+      - db.t3.small
+      - db.t3.medium
+      - db.t3.large
+    Description: "Select the instance class for the RDS instance."
+
+  AllocatedStorage:
+    Type: Number
+    Default: 20
+    Description: "The size of the database (in GB)."
+
+  DBName:
+    Type: String
+    Default: mydatabase
+    Description: "The name of the MySQL database."
+
+  MasterUsername:
+    Type: String
+    Default: admin
+    Description: "The master username for the MySQL database."
+
+  MasterUserPassword:
+    Type: String
+    NoEcho: true
+    Description: "The master password for the MySQL database."
+
+  DBSubnetGroupName:
+    Type: String
+    Description: "Subnet group name for the RDS database."
+
+  DBParameterGroupName:
+    Type: String
+    Default: default.mysql8.0
+    Description: "RDS DB parameter group for MySQL."
+
+  SecurityGroupIds:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+    Description: "Select security group(s) for the RDS instance."
+
+Resources:
+  MyDBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: "Subnet group for RDS MySQL instance"
+      SubnetIds: !Ref SubnetIds
+
+  MyRDSInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: !Ref DBInstanceClass
+      AllocatedStorage: !Ref AllocatedStorage
+      DBName: !Ref DBName
+      Engine: "mysql"
+      EngineVersion: "8.0.39"
+      MasterUsername: !Ref MasterUsername
+      MasterUserPassword: !Ref MasterUserPassword
+      VPCSecurityGroups: !Ref SecurityGroupIds
+      DBSubnetGroupName: !Ref MyDBSubnetGroup
+      DBParameterGroupName: !Ref DBParameterGroupName
+      MultiAZ: false
+      PubliclyAccessible: false
+
+Outputs:
+  RDSInstanceEndpoint:
+    Description: "The connection endpoint for the RDS MySQL instance"
+    Value: !GetAtt MyRDSInstance.Endpoint.Address
+
+  RDSInstancePort:
+    Description: "The port number for the RDS MySQL instance"
+    Value: !GetAtt MyRDSInstance.Endpoint.Port
