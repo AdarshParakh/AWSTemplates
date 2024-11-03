@@ -1,104 +1,67 @@
-AWSTemplateFormatVersion: "2010-09-09"
-Description: >
-  CloudFormation template to create an Amazon RDS MySQL instance using the Free 
-  Tier instance type with configurable networking and security options.
-
-Parameters:
-  VPC:
-    Type: AWS::EC2::VPC::Id
-    Description: "Select the VPC for the RDS instance."
-    # Specifies the VPC where the RDS instance will be deployed.
-
-  SubnetIds:
-    Type: List<AWS::EC2::Subnet::Id>
-    Description: "Select the subnet(s) for the RDS instance."
-    # List of subnets where the RDS instance will be placed. RDS requires subnets across two AZs for high availability.
-
-  DBInstanceClass:
-    Type: String
-    Default: db.t4g.micro
-    AllowedValues:
-      - db.t4g.micro
-    Description: "Free Tier instance class for the RDS instance."
-    # Limits the instance type to Free Tier-eligible db.t4g.micro.
-
-  AllocatedStorage:
-    Type: Number
-    Default: 20
-    Description: "Storage size in GB for the database."
-    # Sets the storage for the RDS instance in GB. Default is 20GB to stay within Free Tier limits.
-
-  DBName:
-    Type: String
-    Default: usernameDB
-    Description: "Name of the MySQL database."
-    # Defines the database name to create when the instance is launched.
-
-  MasterUsername:
-    Type: String
-    Default: admin
-    Description: "Master username for the MySQL database."
-    # Sets the administrator username for accessing the database.
-
-  MasterUserPassword:
-    Type: String
-    NoEcho: true
-    Description: "Password for the master username."
-    # Sets the password for the database administrator. NoEcho hides the password in CloudFormation logs.
-
-  DBSubnetGroupName:
-    Type: String
-    Default: p3-username-dbsubnetgroup
-    Description: "Name of the RDS subnet group."
-    # Name for the subnet group associated with this RDS instance.
-
-  DBParameterGroupName:
-    Type: String
-    Default: default.mysql8.0
-    Description: "RDS parameter group for MySQL."
-    # Specifies a parameter group to configure MySQL-specific settings.
-
-  SecurityGroupIds:
-    Type: List<AWS::EC2::SecurityGroup::Id>
-    Description: "Security group(s) for the RDS instance."
-    # Allows the user to select security groups to control RDS network access.
-
+AWSTemplateFormatVersion: '2010-09-09'
 Resources:
-  MyDBSubnetGroup:
-    Type: AWS::RDS::DBSubnetGroup
+  MyBucket:
+    Type: 'AWS::S3::Bucket'
     Properties:
-      DBSubnetGroupDescription: "Subnet group for RDS MySQL instance."
-      SubnetIds: !Ref SubnetIds
-    # Creates a DB subnet group with the specified subnets. RDS uses this group to place the instance across multiple AZs.
+      BucketName: p2-yourfullname
 
-  MyRDSInstance:
-    Type: AWS::RDS::DBInstance
+  EmrRole:
+    Type: 'AWS::IAM::Role'
     Properties:
-      DBInstanceClass: !Ref DBInstanceClass
-      AllocatedStorage: !Ref AllocatedStorage
-      DBName: !Ref DBName
-      Engine: "mysql"
-      EngineVersion: "8.0.39"
-      MasterUsername: !Ref MasterUsername
-      MasterUserPassword: !Ref MasterUserPassword
-      VPCSecurityGroups: !Ref SecurityGroupIds
-      DBSubnetGroupName: !Ref DBSubnetGroupName
-      DBParameterGroupName: !Ref DBParameterGroupName
-      MultiAZ: false
-      PubliclyAccessible: false
-    # Defines the RDS instance with settings specified through parameters:
-    # - DBInstanceClass and AllocatedStorage set the instance type and storage size.
-    # - DBName, MasterUsername, and MasterUserPassword set up the MySQL database and login credentials.
-    # - VPCSecurityGroups and DBSubnetGroupName control network and availability settings.
-    # - PubliclyAccessible is false to restrict access to within the VPC.
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - elasticmapreduce.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
+        - 'arn:aws:iam::aws:policy/service-role/AmazonElasticMapReduceRole'
 
-Outputs:
-  RDSInstanceEndpoint:
-    Description: "Connection endpoint for the RDS MySQL instance."
-    Value: !GetAtt MyRDSInstance.Endpoint.Address
-    # Outputs the endpoint URL to connect to the RDS instance.
+  EmrEc2InstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Roles:
+        - !Ref EmrRole
 
-  RDSInstancePort:
-    Description: "Port number for the RDS MySQL instance."
-    Value: !GetAtt MyRDSInstance.Endpoint.Port
-    # Outputs the port number for MySQL (default 3306).
+  EmrSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Security Group for EMR
+      VpcId: YourVpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+  EmrCluster:
+    Type: 'AWS::EMR::Cluster'
+    Properties:
+      Applications:
+        - Name: Hadoop
+        - Name: Hive
+        - Name: Spark
+      Instances:
+        Ec2KeyName: YourKeyName
+        KeepJobFlowAliveWhenNoSteps: true
+        TerminationProtected: false
+        Ec2SubnetId: YourSubnetId
+        EmrManagedMasterSecurityGroup: YourSecurityGroupId
+        EmrManagedSlaveSecurityGroup: YourSecurityGroupId
+        MasterInstanceGroup:
+          InstanceCount: 1
+          InstanceType: c1.medium
+          Name: Master
+        CoreInstanceGroup:
+          InstanceCount: 1
+          InstanceType: c1.medium
+          Name: Core
+      JobFlowRole: !Ref EmrEc2InstanceProfile
+      Name: p2-yourfullname
+      ReleaseLabel: emr-7.0.0
+      ServiceRole: !Ref EmrRole
+      VisibleToAllUsers: true

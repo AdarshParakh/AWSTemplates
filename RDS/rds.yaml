@@ -1,64 +1,75 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "AWS CloudFormation Template for RDS MySQL Database with configurable VPC, Subnet, and Security Group."
+Description: >
+  CloudFormation template to create an Amazon RDS MySQL instance using the Free 
+  Tier instance type with configurable networking and security options.
 
 Parameters:
   VPC:
     Type: AWS::EC2::VPC::Id
     Description: "Select the VPC for the RDS instance."
+    # Specifies the VPC where the RDS instance will be deployed.
 
   SubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
     Description: "Select the subnet(s) for the RDS instance."
+    # List of subnets where the RDS instance will be placed. RDS requires subnets across two AZs for high availability.
 
   DBInstanceClass:
     Type: String
-    Default: db.t3.micro
+    Default: db.t4g.micro
     AllowedValues:
-      - db.t3.micro
-      - db.t3.small
-      - db.t3.medium
-      - db.t3.large
-    Description: "Select the instance class for the RDS instance."
+      - db.t4g.micro
+    Description: "Free Tier instance class for the RDS instance."
+    # Limits the instance type to Free Tier-eligible db.t4g.micro.
 
   AllocatedStorage:
     Type: Number
     Default: 20
-    Description: "The size of the database (in GB)."
+    Description: "Storage size in GB for the database."
+    # Sets the storage for the RDS instance in GB. Default is 20GB to stay within Free Tier limits.
 
   DBName:
     Type: String
-    Default: mydatabase
-    Description: "The name of the MySQL database."
+    Default: usernameDB
+    Description: "Name of the MySQL database."
+    # Defines the database name to create when the instance is launched.
 
   MasterUsername:
     Type: String
     Default: admin
-    Description: "The master username for the MySQL database."
+    Description: "Master username for the MySQL database."
+    # Sets the administrator username for accessing the database.
 
   MasterUserPassword:
     Type: String
     NoEcho: true
-    Description: "The master password for the MySQL database."
+    Description: "Password for the master username."
+    # Sets the password for the database administrator. NoEcho hides the password in CloudFormation logs.
 
   DBSubnetGroupName:
     Type: String
-    Description: "Subnet group name for the RDS database."
+    Default: p3-username-dbsubnetgroup
+    Description: "Name of the RDS subnet group."
+    # Name for the subnet group associated with this RDS instance.
 
   DBParameterGroupName:
     Type: String
     Default: default.mysql8.0
-    Description: "RDS DB parameter group for MySQL."
+    Description: "RDS parameter group for MySQL."
+    # Specifies a parameter group to configure MySQL-specific settings.
 
   SecurityGroupIds:
     Type: List<AWS::EC2::SecurityGroup::Id>
-    Description: "Select security group(s) for the RDS instance."
+    Description: "Security group(s) for the RDS instance."
+    # Allows the user to select security groups to control RDS network access.
 
 Resources:
   MyDBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
-      DBSubnetGroupDescription: "Subnet group for RDS MySQL instance"
+      DBSubnetGroupDescription: "Subnet group for RDS MySQL instance."
       SubnetIds: !Ref SubnetIds
+    # Creates a DB subnet group with the specified subnets. RDS uses this group to place the instance across multiple AZs.
 
   MyRDSInstance:
     Type: AWS::RDS::DBInstance
@@ -71,16 +82,23 @@ Resources:
       MasterUsername: !Ref MasterUsername
       MasterUserPassword: !Ref MasterUserPassword
       VPCSecurityGroups: !Ref SecurityGroupIds
-      DBSubnetGroupName: !Ref MyDBSubnetGroup
+      DBSubnetGroupName: !Ref DBSubnetGroupName
       DBParameterGroupName: !Ref DBParameterGroupName
       MultiAZ: false
       PubliclyAccessible: false
+    # Defines the RDS instance with settings specified through parameters:
+    # - DBInstanceClass and AllocatedStorage set the instance type and storage size.
+    # - DBName, MasterUsername, and MasterUserPassword set up the MySQL database and login credentials.
+    # - VPCSecurityGroups and DBSubnetGroupName control network and availability settings.
+    # - PubliclyAccessible is false to restrict access to within the VPC.
 
 Outputs:
   RDSInstanceEndpoint:
-    Description: "The connection endpoint for the RDS MySQL instance"
+    Description: "Connection endpoint for the RDS MySQL instance."
     Value: !GetAtt MyRDSInstance.Endpoint.Address
+    # Outputs the endpoint URL to connect to the RDS instance.
 
   RDSInstancePort:
-    Description: "The port number for the RDS MySQL instance"
+    Description: "Port number for the RDS MySQL instance."
     Value: !GetAtt MyRDSInstance.Endpoint.Port
+    # Outputs the port number for MySQL (default 3306).
